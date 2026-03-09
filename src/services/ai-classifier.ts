@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { Category, ClassificationResultItem, ReportItem, AIProviderConfig } from '@/types';
-import { createProvider } from './ai-provider';
+import { createProvider, SAFE_TEST_MODELS } from './ai-provider';
 import { getActiveConfig } from '@/lib/ai-config';
 
 function buildSystemPrompt(categories: Pick<Category, 'id' | 'name'>[]): string {
@@ -92,8 +92,14 @@ export async function classifyReport(
  */
 export async function testApiConnection(config?: AIProviderConfig): Promise<boolean> {
   try {
-    const provider = createProvider(config ?? getActiveConfig());
-    await provider.chat('You are a test assistant.', 'Hi', 10);
+    const cfg = config ?? getActiveConfig();
+    // 테스트 시 안전한 모델 사용 (존재가 확실한 모델)
+    const testConfig = {
+      ...cfg,
+      model: SAFE_TEST_MODELS[cfg.provider] ?? cfg.model,
+    };
+    const provider = createProvider(testConfig);
+    await provider.chat('You are a test assistant.', 'Hi', 50);
     return true;
   } catch {
     return false;

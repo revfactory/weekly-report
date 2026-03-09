@@ -39,12 +39,16 @@ class OpenAIProvider implements AIProvider {
   }
 
   async chat(system: string, user: string, maxTokens: number): Promise<string> {
+    const isReasoningModel = /^o[0-9]/.test(this.model);
+
     const res = await this.client.chat.completions.create({
       model: this.model,
-      max_tokens: maxTokens,
+      ...(isReasoningModel
+        ? { max_completion_tokens: maxTokens }
+        : { max_completion_tokens: maxTokens }),
       messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
+        ...(isReasoningModel ? [] : [{ role: 'system' as const, content: system }]),
+        { role: 'user' as const, content: isReasoningModel ? `${system}\n\n${user}` : user },
       ],
     });
     const text = res.choices[0]?.message?.content;
@@ -65,7 +69,7 @@ class GeminiProvider implements AIProvider {
   async chat(system: string, user: string, maxTokens: number): Promise<string> {
     const model = this.genAI.getGenerativeModel({
       model: this.model,
-      systemInstruction: system,
+      systemInstruction: { role: 'system', parts: [{ text: system }] },
       generationConfig: { maxOutputTokens: maxTokens },
     });
     const result = await model.generateContent(user);
@@ -87,3 +91,10 @@ export function createProvider(config: AIProviderConfig): AIProvider {
       return new GeminiProvider(config.apiKey, config.model);
   }
 }
+
+/** 테스트에 안전한 모델 ID (2026-03 기준 존재 확실, 경제적 모델) */
+export const SAFE_TEST_MODELS: Record<string, string> = {
+  anthropic: 'claude-haiku-4-5-20251001',
+  openai: 'gpt-5-mini',
+  gemini: 'gemini-2.5-flash',
+};
