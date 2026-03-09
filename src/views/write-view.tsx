@@ -19,7 +19,7 @@ import {
   getWeekRange,
   formatWeekLabel,
 } from '@/lib/utils';
-import { API_KEY_STORAGE_KEY } from '@/lib/constants';
+import { getActiveConfig } from '@/lib/ai-config';
 import { Sparkles, Save, AlertTriangle } from 'lucide-react';
 import type { ReportItem, WeeklyReport } from '@/types';
 
@@ -47,8 +47,7 @@ export default function WriteView() {
   // Check for existing report for selected week (when not editing by ID)
   const existingForWeek = useWeeklyReportByWeek(selectedYear, selectedWeek);
 
-  const apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-  const hasApiKey = !!apiKey;
+  const hasApiKey = !!getActiveConfig().apiKey;
 
   // Edit mode: by URL param or existing report for selected week
   const isEditMode = (!!id && !!existingReport) || !!existingForWeek;
