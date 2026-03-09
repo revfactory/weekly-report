@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { PenLine, List, BarChart3, FileText, Settings, Moon, Sun, X } from 'lucide-react';
+import { PenLine, List, BarChart3, FileText, Settings, Moon, Sun, X, Github } from 'lucide-react';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 
@@ -92,6 +92,15 @@ export function Sidebar() {
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             <span>{theme === 'dark' ? '라이트 모드' : '다크 모드'}</span>
           </button>
+          <a
+            href="https://github.com/revfactory/weekly-report"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-10 w-full items-center gap-2 rounded-md px-3 text-sm font-medium text-text-secondary hover:bg-surface hover:text-text-primary transition-colors"
+          >
+            <Github size={18} />
+            <span>GitHub</span>
+          </a>
         </div>
       </aside>
     </>
