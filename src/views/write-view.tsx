@@ -19,7 +19,8 @@ import {
   getWeekRange,
   formatWeekLabel,
 } from '@/lib/utils';
-import { getActiveConfig } from '@/lib/ai-config';
+import { getActiveConfig, getActiveProvider } from '@/lib/ai-config';
+import { AI_PROVIDER_LABELS } from '@/lib/constants';
 import { Sparkles, Save, AlertTriangle } from 'lucide-react';
 import type { ReportItem, WeeklyReport } from '@/types';
 
@@ -102,7 +103,8 @@ export default function WriteView() {
       return;
     }
     if (!hasApiKey) {
-      addToast('error', 'API 키가 설정되지 않았습니다. 설정에서 API 키를 입력해주세요.');
+      const providerName = AI_PROVIDER_LABELS[getActiveProvider()];
+      addToast('error', `${providerName} API 키가 설정되지 않았습니다. 설정에서 API 키를 등록해주세요.`);
       return;
     }
     if (!categories) return;
@@ -230,11 +232,11 @@ export default function WriteView() {
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
           <AlertTriangle size={16} />
           <span>
-            API 키가 설정되지 않았습니다.{' '}
+            {AI_PROVIDER_LABELS[getActiveProvider()]} API 키가 설정되지 않았습니다.{' '}
             <Link to="/settings" className="underline font-medium">
               설정 페이지
             </Link>
-            에서 API 키를 입력해주세요.
+            에서 API 키를 등록해주세요.
           </span>
         </div>
       )}

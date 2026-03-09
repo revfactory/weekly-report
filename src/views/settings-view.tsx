@@ -85,11 +85,20 @@ export default function SettingsView() {
   // 영역 2 핸들러: 키 저장
   const handleSaveKey = useCallback((p: AIProviderType) => {
     saveApiKey(p, editKey);
+    // 활성 프로바이더에 키가 없으면 이 프로바이더로 자동 전환
+    if (editKey.trim() && !getApiKey(activeProviderState)) {
+      setActiveProviderState(p);
+      setActiveProvider(p);
+      const newModel = AI_PROVIDER_MODELS[p].find((m) => m.default)?.id ?? AI_PROVIDER_MODELS[p][0].id;
+      setActiveModelState(newModel);
+      addToast('success', `${AI_PROVIDER_LABELS[p]} API 키 저장 및 활성 프로바이더로 전환되었습니다.`);
+    } else {
+      addToast('success', `${AI_PROVIDER_LABELS[p]} API 키가 저장되었습니다.`);
+    }
     setEditingProvider(null);
     setEditKey('');
     setKeyVersion((v) => v + 1);
-    addToast('success', `${AI_PROVIDER_LABELS[p]} API 키가 저장되었습니다.`);
-  }, [editKey, addToast]);
+  }, [editKey, activeProviderState, addToast]);
 
   // 영역 2 핸들러: 키 편집 취소
   const handleCancelEdit = useCallback(() => {
