@@ -99,7 +99,7 @@ export async function testApiConnection(config?: AIProviderConfig): Promise<bool
       model: SAFE_TEST_MODELS[cfg.provider] ?? cfg.model,
     };
     const provider = createProvider(testConfig);
-    await provider.chat('You are a test assistant.', 'Hi', 50);
+    await provider.chat('You are a test assistant.', 'Hi', 1024);
     return true;
   } catch {
     return false;
