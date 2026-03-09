@@ -3,17 +3,17 @@
 <project_name>WeekPulse - 주간보고 자동 분류 및 리포트 생성 서비스</project_name>
 
 <overview>
-WeekPulse는 개인용 주간보고 관리 서비스입니다. 사용자가 자유 텍스트로 주간 업무 내용을 입력하면, Claude API를 활용하여 자동으로 카테고리를 분류하고, 누적된 데이터를 기반으로 월간/분기/연간 리포트를 자동 생성합니다.
+WeekPulse는 개인용 주간보고 관리 서비스입니다. 사용자가 자유 텍스트로 주간 업무 내용을 입력하면, AI API(Anthropic Claude / OpenAI GPT / Google Gemini 중 선택)를 활용하여 자동으로 카테고리를 분류하고, 누적된 데이터를 기반으로 월간/분기/연간 리포트를 자동 생성합니다.
 
 핵심 워크플로우: (1) 주간보고 입력 → (2) AI 자동 카테고리 분류 → (3) 분류 결과 확인/수정 → (4) 저장 → (5) 대시보드에서 누적 현황 확인 → (6) 월간/분기/연간 리포트 생성 및 다운로드. 카테고리는 사용자가 커스텀으로 정의할 수 있으며, AI가 입력 내용을 분석하여 적절한 카테고리에 자동 매핑합니다.
 
-CRITICAL: 개인용 로컬-우선 앱입니다. 데이터는 IndexedDB에 저장됩니다. 인증/계정 없이 동작합니다. Claude API 호출은 클라이언트에서 직접 수행하며, API 키는 사용자가 설정 화면에서 입력합니다. API 키는 localStorage에 저장됩니다.
+CRITICAL: 개인용 로컬-우선 앱입니다. 데이터는 IndexedDB에 저장됩니다. 인증/계정 없이 동작합니다. AI API 호출은 클라이언트에서 직접 수행하며, 프로바이더별 API 키는 사용자가 설정 화면에서 입력합니다. API 키는 프로바이더별로 독립적으로 localStorage에 저장됩니다.
 </overview>
 
 <scope_boundaries>
   <in_scope>
     - 주간보고 자유 텍스트 입력 (마크다운 지원)
-    - Claude API 기반 자동 카테고리 분류
+    - 멀티 AI 프로바이더(Anthropic/OpenAI/Gemini) 기반 자동 카테고리 분류
     - 커스텀 카테고리 관리 (CRUD)
     - AI 분류 결과 수동 수정 기능
     - 주간보고 CRUD (생성, 조회, 수정, 삭제)
@@ -31,7 +31,7 @@ CRITICAL: 개인용 로컬-우선 앱입니다. 데이터는 IndexedDB에 저장
     - 팀/조직 공유 기능
     - 이메일 알림/리마인더
     - 모바일 네이티브 앱
-    - 자체 AI 모델 (Claude API만 사용)
+    - 자체 AI 모델 (Anthropic/OpenAI/Gemini API만 사용)
   </out_of_scope>
   <future_considerations>
     - 팀 공유 모드 (Phase 2)
@@ -55,16 +55,29 @@ CRITICAL: 개인용 로컬-우선 앱입니다. 데이터는 IndexedDB에 저장
     <note>CRITICAL: 모든 데이터 IndexedDB 저장. 서버 없음. Claude API 호출만 외부 통신.</note>
   </data_layer>
   <ai_layer>
-    <api>Anthropic Claude API (claude-sonnet-4-20250514)</api>
-    <sdk>@anthropic-ai/sdk v0.39 (브라우저 직접 호출, dangerouslyAllowBrowser: true)</sdk>
-    <note>API 키는 사용자가 설정에서 입력, localStorage 저장</note>
+    <providers>
+      <anthropic>
+        <sdk>@anthropic-ai/sdk v0.78 (dangerouslyAllowBrowser: true)</sdk>
+        <models>Claude Sonnet 4.6 (기본), Claude Opus 4.6, Claude Haiku 4.5</models>
+      </anthropic>
+      <openai>
+        <sdk>openai v5 (dangerouslyAllowBrowser: true)</sdk>
+        <models>GPT-5.4 (기본), GPT-5.4 Pro, GPT-5 Mini, o4 Mini, o3 Pro</models>
+      </openai>
+      <gemini>
+        <sdk>@google/generative-ai v0.24</sdk>
+        <models>Gemini 3.1 Pro (기본), Gemini 3.1 Flash Lite, Gemini 2.5 Pro, Gemini 2.5 Flash</models>
+      </gemini>
+    </providers>
+    <architecture>프로바이더 추상화 레이어 (AIProvider 인터페이스 + 팩토리 패턴). 분류/리포트 서비스는 프로바이더에 의존하지 않음.</architecture>
+    <note>프로바이더별 API 키를 독립적으로 localStorage에 저장 (weekpulse-apikey-{provider}). 사용자가 설정에서 프로바이더와 모델을 선택.</note>
   </ai_layer>
   <libraries>
     <charts>Recharts v2.15 for dashboard visualizations</charts>
     <markdown>react-markdown v9.0 + remark-gfm for markdown rendering</markdown>
-    <pdf>html2pdf.js v0.10 for PDF export</pdf>
+    <pdf>html2pdf.js v0.14 for PDF export</pdf>
     <dates>date-fns v4.1 for date formatting and calculations</dates>
-    <icons>Lucide React v0.468 for icons</icons>
+    <icons>Lucide React v0.577 for icons</icons>
     <ids>nanoid v5.1 for generating unique IDs</ids>
   </libraries>
 </technology_stack>
@@ -72,7 +85,7 @@ CRITICAL: 개인용 로컬-우선 앱입니다. 데이터는 IndexedDB에 저장
 <prerequisites>
   <environment_setup>
     - Node.js v20+ and npm v10+
-    - Anthropic API 키 (사용자 제공)
+    - AI 프로바이더 API 키 (Anthropic/OpenAI/Gemini 중 하나 이상, 사용자 제공)
     - Modern browser with IndexedDB support
   </environment_setup>
   <build_configuration>
@@ -84,7 +97,7 @@ CRITICAL: 개인용 로컬-우선 앱입니다. 데이터는 IndexedDB에 저장
 </prerequisites>
 
 <environment_variables>
-  <note>빌드 시 환경 변수 불필요. API 키는 런타임에 사용자가 설정 화면에서 입력하며 localStorage에 저장됨.</note>
+  <note>빌드 시 환경 변수 불필요. 프로바이더별 API 키는 런타임에 사용자가 설정 화면에서 입력하며 localStorage에 프로바이더별로 독립 저장됨.</note>
 </environment_variables>
 
 <file_structure>
@@ -127,8 +140,9 @@ src/
 │   ├── reports-view.tsx           # 월간/분기/연간 리포트
 │   └── settings-view.tsx         # API 키, 카테고리 관리
 ├── services/
-│   ├── ai-classifier.ts          # Claude API 호출 및 분류 로직
-│   └── report-generator.ts       # 리포트 생성 로직 (AI 활용)
+│   ├── ai-provider.ts            # AI 프로바이더 추상화 (Anthropic/OpenAI/Gemini 팩토리)
+│   ├── ai-classifier.ts          # AI 분류 로직 (프로바이더 추상화 사용)
+│   └── report-generator.ts       # 리포트 생성 로직 (프로바이더 추상화 사용)
 ├── stores/
 │   └── ui-store.ts               # Zustand: 사이드바 상태, 테마, 토스트
 ├── hooks/
@@ -137,7 +151,8 @@ src/
 │   └── use-ai.ts                  # AI 분류/리포트 생성 훅
 ├── lib/
 │   ├── utils.ts                   # cn() helper, 날짜/주차 계산
-│   ├── constants.ts               # 기본 카테고리, 색상 프리셋
+│   ├── constants.ts               # 기본 카테고리, 색상 프리셋, AI 프로바이더/모델 목록
+│   ├── ai-config.ts               # AI 프로바이더 설정 관리 (localStorage)
 │   └── export.ts                  # 마크다운/PDF 내보내기 유틸
 ├── types/
 │   └── index.ts                   # 모든 타입 정의
@@ -193,10 +208,17 @@ src/
     Indexes: [type+year+period], [year]
   </generated_report>
 
+  <ai_provider_config>
+    (localStorage 기반, 별도 테이블 아님)
+    - activeProvider: AIProviderType (anthropic | openai | gemini)
+    - activeModel: string (프로바이더별 모델 ID)
+    - apiKeys: 프로바이더별 독립 저장 (weekpulse-apikey-{provider})
+    - 각 모델에 tag 속성: "추천 · 균형", "최고 성능", "빠름 · 경제적" 등
+  </ai_provider_config>
+
   <settings>
     (단일 레코드, key-value 형태)
     - id: string ("user-settings" 고정)
-    - apiKey: string (Anthropic API 키, localStorage에 별도 저장)
     - theme: enum (light, dark, system)
     - defaultCategories: string[] (기본 카테고리 ID 목록)
     - reportLanguage: string ("ko" 고정, 향후 확장 가능)
@@ -236,6 +258,7 @@ src/
               <sidebar_footer>
                 <nav_item icon="settings" label="설정" path="/settings" />
                 <theme_toggle />
+                <github_link href="https://github.com/revfactory/weekly-report" icon="github" label="GitHub" />
               </sidebar_footer>
             </sidebar>
             <main_panel>
@@ -404,13 +427,25 @@ src/
     <header>
       - Title: "설정" 24px / 700
     </header>
-    <api_key_section>
-      - Label: "Anthropic API Key"
-      - Input: password type, 표시/숨기기 토글 (eye icon)
-      - 설명: "Claude API를 사용하여 업무를 분류하고 리포트를 생성합니다." 13px #9CA3AF
-      - "저장" 버튼
-      - 연결 테스트: "API 연결 테스트" 버튼, 성공/실패 표시
-    </api_key_section>
+    <provider_selection_section>
+      - Title: "사용할 프로바이더"
+      - 라디오 버튼 카드 그룹: Anthropic / OpenAI / Gemini
+      - 각 프로바이더 카드에 키 등록 상태 dot 표시 (초록=등록됨, 회색=미등록)
+      - 프로바이더 변경 시 즉시 반영 (별도 저장 없음)
+      - 모델 선택: 라디오 카드 그리드 (2~3열), 모델명 + 특성 태그 (추천·균형, 빠름·경제적, 추론 특화 등)
+      - 모델 변경 시 즉시 반영
+    </provider_selection_section>
+    <api_key_management_section>
+      - Title: "API 키 관리"
+      - 3개 프로바이더 리스트: 프로바이더명 + 상태 뱃지(등록됨/미등록) + 액션 버튼
+      - 키 있을 때: [키 변경] [테스트] 버튼
+      - 키 없을 때: [키 등록] 버튼
+      - 인라인 확장 편집: 키 등록/변경 클릭 시 해당 행이 확장되어 Input + 저장/테스트 표시
+      - Input: password type, 프로바이더별 placeholder (sk-ant-... / sk-... / AIza...)
+      - 표시/숨기기 토글 (eye icon)
+      - 프로바이더별 독립 저장 + 독립 연결 테스트
+      - 하단 안내: "API 키는 브라우저 로컬 스토리지에만 저장됩니다."
+    </api_key_management_section>
     <category_section>
       - Title: "카테고리 관리" 18px / 600
       - 카테고리 목록: 드래그 정렬 가능
@@ -437,13 +472,15 @@ src/
   </weekly_report_management>
 
   <ai_classification>
-    - Claude API (claude-sonnet-4-20250514) 호출
+    - 프로바이더 추상화 레이어를 통해 AI API 호출 (Anthropic/OpenAI/Gemini)
+    - 프로바이더 무관 동일 프롬프트 사용
     - 시스템 프롬프트: 사용자의 카테고리 목록 + 분류 규칙 포함
     - 입력: rawContent 텍스트
     - 출력: JSON 배열 [{content, categoryId, importance}]
     - 분류 후 사용자 검토/수정 단계 필수
     - API 키 없으면 수동 분류 모드 (카테고리 직접 선택)
     - 에러 처리: API 실패 시 토스트 알림, 수동 분류 유도
+    - JSON 파싱 실패 시 1회 재시도
     - CRITICAL: 프롬프트에 카테고리 ID와 이름을 매핑하여 전달. AI 응답은 structured output (JSON)으로 받음.
   </ai_classification>
 
@@ -451,7 +488,7 @@ src/
     - 월간: 해당 월의 모든 confirmed 주간보고를 종합
     - 분기: 해당 분기(3개월)의 모든 confirmed 주간보고를 종합
     - 연간: 해당 연도의 모든 confirmed 주간보고를 종합
-    - Claude API 호출로 종합 리포트 마크다운 생성
+    - 선택된 AI 프로바이더를 통해 종합 리포트 마크다운 생성
     - 리포트 구조: 개요 → 카테고리별 상세 → 주요 성과 → 시간 분석 → 인사이트/전망
     - 생성된 리포트는 IndexedDB에 저장 (캐싱)
     - 재생성 가능 (이전 리포트 덮어쓰기)
@@ -474,8 +511,11 @@ src/
   <data_persistence>
     - 모든 변경 즉시 IndexedDB 저장 (Dexie)
     - liveQuery로 UI 자동 갱신
-    - API 키: localStorage("weekpulse-api-key")
+    - AI 프로바이더별 API 키: localStorage("weekpulse-apikey-{provider}")
+    - 활성 프로바이더: localStorage("weekpulse-ai-provider")
+    - 활성 모델: localStorage("weekpulse-ai-model")
     - 테마: localStorage("weekpulse-theme")
+    - 기존 단일 키(weekpulse-api-key) → anthropic 키로 자동 마이그레이션
   </data_persistence>
 </core_functionality>
 
@@ -491,7 +531,7 @@ src/
     <form_validation>
       - 주간보고 내용 필수: "내용을 입력해주세요"
       - 카테고리 이름 필수: "카테고리 이름을 입력해주세요"
-      - API 키 형식 검증: "sk-ant-" 접두사 확인
+      - API 키 형식 검증: 프로바이더별 placeholder 안내 (sk-ant-... / sk-... / AIza...)
     </form_validation>
     <error_states>
       - API 키 미설정: 경고 배너 + 설정 페이지 링크
@@ -612,7 +652,7 @@ src/
   <data_protection>
     - 모든 데이터 로컬 IndexedDB 저장, 서버 전송 없음
     - API 키만 외부 통신에 사용
-    - CRITICAL: API 키는 localStorage에 저장. 사용자에게 "로컬 저장" 명시.
+    - CRITICAL: 프로바이더별 API 키는 localStorage에 저장. 사용자에게 "로컬 저장" 명시.
   </data_protection>
   <input_validation>
     - 주간보고 내용: max 10000 chars
@@ -621,7 +661,8 @@ src/
     - AI 응답 JSON 파싱 시 try-catch 필수
   </input_validation>
   <api_security>
-    - API 키는 CORS 문제로 클라이언트에서 직접 호출 시 dangerouslyAllowBrowser 사용
+    - Anthropic/OpenAI SDK: dangerouslyAllowBrowser 사용 (클라이언트 직접 호출)
+    - Gemini SDK: 브라우저 직접 호출 기본 지원
     - CRITICAL: 프로덕션 배포 시 프록시 서버 사용 권장 (MVP에서는 직접 호출 허용)
   </api_security>
 </security_considerations>
@@ -630,8 +671,8 @@ src/
   <test_scenario_1>
     <description>첫 주간보고 작성 및 AI 분류</description>
     <steps>
-      1. 앱 최초 진입 → 설정 페이지로 이동하여 API 키 입력
-      2. API 연결 테스트 버튼 클릭 → 성공 토스트 확인
+      1. 앱 최초 진입 → 설정 페이지로 이동하여 프로바이더 선택 + 모델 선택 + API 키 등록
+      2. 해당 프로바이더 연결 테스트 버튼 클릭 → 성공 토스트 확인
       3. "보고 작성" 페이지 이동 → 현재 주차 자동 표시 확인
       4. 텍스트 입력: "사용자 인증 모듈 개발\n주간 미팅 참석\n코드 리뷰 3건"
       5. "AI 분류" 버튼 클릭 → 로딩 상태 확인
@@ -720,10 +761,10 @@ src/
   <recommended_implementation_order>
     1. 프로젝트 셋업 (Vite + React + Tailwind + TypeScript)
     2. Dexie 데이터베이스 스키마 + 기본 카테고리 시드
-    3. App Shell 레이아웃 (사이드바 + 라우터)
-    4. 설정 페이지 (API 키 입력 + 카테고리 관리)
+    3. App Shell 레이아웃 (사이드바 + 라우터 + GitHub 링크)
+    4. 설정 페이지 (멀티 프로바이더 선택 + 모델 라디오 카드 + API 키 관리 + 카테고리 관리)
     5. 주간보고 작성 페이지 (텍스트 입력 + 주차 선택)
-    6. AI 분류 서비스 (Claude API 연동)
+    6. AI 프로바이더 추상화 레이어 + 분류 서비스 (멀티 프로바이더 연동)
     7. 분류 결과 표시/수정 UI
     8. 주간보고 목록 + 상세 보기
     9. 대시보드 차트 (Recharts)
@@ -774,6 +815,7 @@ src/
   </database_schema>
 
   <performance_considerations>
+    - AI 프로바이더/모델 변경은 즉시 반영 (저장 버튼 없음)
     - AI 분류 시 로딩 상태 즉시 표시 (UX)
     - 대시보드 차트 데이터 계산은 useMemo로 캐싱
     - 리포트 생성 시 긴 텍스트 → 토큰 제한 고려 (max_tokens 4096)
