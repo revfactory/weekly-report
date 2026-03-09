@@ -40,12 +40,12 @@ class OpenAIProvider implements AIProvider {
 
   async chat(system: string, user: string, maxTokens: number): Promise<string> {
     const isReasoningModel = /^o[0-9]/.test(this.model);
+    // 추론 모델은 추론 토큰이 max_completion_tokens에 포함되므로 8배 확보
+    const tokens = isReasoningModel ? Math.max(maxTokens * 8, 16384) : maxTokens;
 
     const res = await this.client.chat.completions.create({
       model: this.model,
-      ...(isReasoningModel
-        ? { max_completion_tokens: maxTokens }
-        : { max_completion_tokens: maxTokens }),
+      max_completion_tokens: tokens,
       messages: [
         ...(isReasoningModel ? [] : [{ role: 'system' as const, content: system }]),
         { role: 'user' as const, content: isReasoningModel ? `${system}\n\n${user}` : user },
